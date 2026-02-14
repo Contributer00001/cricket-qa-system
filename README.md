@@ -1,4 +1,4 @@
-cat > README.md << 'EOF'
+
 # Cricket Statistics Q&A System 🏏
 
 Fine-tuned LLM system for answering cricket match statistics questions using a multi-agent architecture with grounded answer extraction.
