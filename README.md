@@ -331,4 +331,3 @@ Open an issue on GitHub or reach out via HuggingFace discussions.
 ---
 
 **Built with ❤️ for cricket analytics**
-EOF
