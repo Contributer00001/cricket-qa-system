@@ -1,17 +1,15 @@
-nano .gitignore
-```
-
-**Paste:**
-```
 # ============================================================
 # PRIVATE DATA - DO NOT COMMIT
 # ============================================================
 data/Indian_Premier_League_2022-03-26/
+data/**/match_innings_commentary/
 data/Indian_Premier_League_2022-03-26.zip
 data/*.zip
-data/*.jsonl           # ← ADD THIS LINE
-data/generated_qa.jsonl  # ← ADD THIS LINE  
-data/train.jsonl         # ← ADD THIS LINE
+data/*.jsonl
+data/generated_qa.jsonl
+data/train.jsonl
+*.csv
+*.xlsx
 
 # ============================================================
 # SECRETS - DO NOT COMMIT
@@ -49,21 +47,34 @@ env/
 .venv/
 
 # ============================================================
-# DOCKER
+# TESTING (optional test scripts)
 # ============================================================
-.dockerignore
+test_hf_lora.py
+test_lora.py
 
 # ============================================================
-# IDE
+# DOCKER & DEPLOYMENT
+# ============================================================
+.dockerignore
+deploy/
+
+# ============================================================
+# IDE & SYSTEM
 # ============================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
+.pytest_cache/
 
 # ============================================================
 # LOGS
 # ============================================================
 *.log
 logs/
+
+# ============================================================
+# DOCUMENTATION (keep README, but block old docs)
+# ============================================================
+MODEL_MONITORING.md
