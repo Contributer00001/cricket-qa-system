@@ -329,5 +329,28 @@ MIT License - see [LICENSE](LICENSE) file for details.
 Open an issue on GitHub or reach out via HuggingFace discussions.
 
 ---
+---
 
+## Authors
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/Contributer00001">
+        <img src="https://github.com/Contributer00001.png" width="100px;" alt="Parth Giri"/>
+        <br />
+        <sub><b>Parth Giri</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/namankhatakdotcpp">
+        <img src="https://github.com/namankhatakdotcpp.png" width="100px;" alt="Naman Khatak"/>
+        <br />
+        <sub><b>Naman Khatak</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
+**Made with ❤️ by Parth Giri and Naman Khatak**
 **Built with ❤️ for cricket analytics**
