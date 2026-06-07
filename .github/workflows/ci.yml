@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "improve-rag"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      # Install CPU-only torch to keep CI fast; the GPU/MPS version is
+      # only needed at runtime. All non-model tests run without it.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check agents/ service/ evaluation/ observability/ tests/ scripts/
+
+      - name: Run tests (no model download)
+        run: |
+          pytest tests/test_stats_engine.py tests/test_query_router.py tests/test_inference.py \
+            --cov=agents --cov=service \
+            --cov-report=term-missing \
+            -v
+        env:
+          # Prevent any accidental HuggingFace downloads in CI
+          TRANSFORMERS_OFFLINE: "1"
+          HF_DATASETS_OFFLINE: "1"
+
+  benchmark:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Run benchmark (deterministic no-LLM path)
+        run: python -m evaluation.benchmark --data-file data/sample_match.json
+
+      - name: Assert exact-match ≥ 70%
+        run: |
+          python - <<'EOF'
+          import json
+          from evaluation.benchmark import run_benchmark, summarise
+          with open("data/sample_match.json") as f:
+              import json
+              data = json.load(f)
+          results = run_benchmark(data)
+          summary = summarise(results)
+          print(f"Exact match: {summary['exact_match']:.1%}")
+          assert summary["exact_match"] >= 0.70, (
+              f"Exact match {summary['exact_match']:.1%} < 70% threshold"
+          )
+          EOF
