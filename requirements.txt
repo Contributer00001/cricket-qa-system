@@ -1,9 +1,36 @@
-fastapi
-uvicorn
-transformers
-datasets
-peft
-accelerate
-torch
-huggingface_hub
-pandas
+# ── Inference service ────────────────────────────────────────────────────────
+fastapi==0.115.4
+uvicorn[standard]==0.32.1
+pydantic==2.9.2
+python-multipart==0.0.12
+slowapi==0.1.9
+
+# ── ML / model ───────────────────────────────────────────────────────────────
+torch==2.4.1
+transformers==4.45.2
+peft==0.13.0
+accelerate==1.0.1
+huggingface_hub==0.26.1
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+pandas==2.3.0
+pyarrow==21.0.0
+duckdb==1.3.0
+datasets==3.0.2
+
+# ── Training ─────────────────────────────────────────────────────────────────
+trl==0.11.4
+
+# ── Observability ────────────────────────────────────────────────────────────
+prometheus-fastapi-instrumentator==7.0.0
+
+# ── Evaluation / RAGAS ───────────────────────────────────────────────────────
+scikit-learn==1.5.2
+ragas==0.2.15
+langchain-community>=0.3.0
+langchain-google-genai>=2.0.0   # RAGAS LLM judge via Google AI Studio
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest==8.3.3
+pytest-cov==6.0.0
+httpx==0.27.2

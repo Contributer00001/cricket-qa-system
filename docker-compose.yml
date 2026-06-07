@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+
+    # Load API_KEY, HF_TOKEN, BASE_MODEL, LORA_REPO, DEFAULT_MATCH_FILE
+    # from a local .env file.  Create one from .env.example before running.
+    env_file: .env
+
+    # Mount data/ so new match files can be added without rebuilding the image.
+    volumes:
+      - ./data:/app/data:ro
+
+    # Keep HuggingFace model cache between container restarts.
+    # Remove this volume to force a fresh model download.
+      - hf_cache:/app/.cache/huggingface
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  hf_cache:

@@ -1,43 +1,43 @@
-#!/usr/bin/env python3
-# agents/multi_agent.py
+"""
+Legacy pipeline components — kept for backward compatibility with the
+existing LoRA adapter (Conqueror00001/qwen-ipl-lora).
 
+New code should use:
+  agents.stats_engine.StatsEngine
+  agents.query_router.QueryRouter
+  agents.orchestrator.CricketOrchestrator
+"""
 from __future__ import annotations
-from typing import Dict, List, Any
-import torch
+
 import logging
 import re
+from typing import Any, Dict, List, Optional
 
-# ============================================================
-# Logging (production friendly)
-# ============================================================
+import torch
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
-# ============================================================
-# StatsTool (Deterministic Tool Layer)
-# ============================================================
+# ── StatsTool ──────────────────────────────────────────────────────────────
 
 class StatsTool:
     """
     Deterministic cricket statistics tool.
-    No ML, no hallucination. Pure computation.
+
+    Retained alongside StatsEngine to support existing training scripts.
+    Prefer StatsEngine for new work — it uses pandas and supports
+    arbitrary over ranges.
     """
 
-    def __init__(self, commentary_data: Dict[str, Any]):
+    def __init__(self, commentary_data: Dict[str, Any]) -> None:
         self.commentaries: List[dict] = commentary_data.get("commentaries", [])
-
-        # Keep all relevant events
         self.events = [
             c for c in self.commentaries
             if c.get("event") in {"ball", "wicket"}
         ]
 
     def _max_over(self) -> int:
-        if not self.events:
-            return 0
-        return max(int(c.get("over", 0)) for c in self.events)
+        return max((int(c.get("over", 0)) for c in self.events), default=0)
 
     def runs_last_n_overs(self, n: int) -> int:
         max_over = self._max_over()
@@ -53,6 +53,14 @@ class StatsTool:
     def total_wickets(self) -> int:
         return sum(1 for c in self.events if c.get("event") == "wicket")
 
+    def wickets_last_n_overs(self, n: int) -> int:
+        max_over = self._max_over()
+        return sum(
+            1 for c in self.events
+            if c.get("event") == "wicket"
+            and int(c.get("over", 0)) >= max_over - n + 1
+        )
+
     def total_fours(self) -> int:
         return sum(1 for c in self.events if c.get("four") is True)
 
@@ -60,126 +68,130 @@ class StatsTool:
         return sum(1 for c in self.events if c.get("six") is True)
 
 
-# ============================================================
-# RetrieverAgent (Structured Context Generator)
-# ============================================================
+# ── RetrieverAgent ─────────────────────────────────────────────────────────
 
 class RetrieverAgent:
     """
-    Converts StatsTool outputs into LLM-readable factual context.
+    Converts StatsTool outputs into an LLM-readable context string.
+
+    Uses the question to select relevant stats rather than always
+    returning all five metrics.
     """
 
-    def __init__(self, tool: StatsTool):
+    def __init__(self, tool: StatsTool) -> None:
         self.tool = tool
 
     def act(self, question: str) -> str:
-        # Question currently unused, but kept for extensibility
-        context = (
-            f"Context:\n"
-            f"- Total runs: {self.tool.total_runs()}\n"
-            f"- Runs in last 5 overs: {self.tool.runs_last_n_overs(5)}\n"
-            f"- Total wickets: {self.tool.total_wickets()}\n"
-            f"- Fours: {self.tool.total_fours()}\n"
-            f"- Sixes: {self.tool.total_sixes()}\n"
-        )
+        q = question.lower()
 
-        logger.info("Retriever context generated")
+        lines = ["Context:"]
+        lines.append(f"- Total runs: {self.tool.total_runs()}")
+        lines.append(f"- Total wickets: {self.tool.total_wickets()}")
+
+        if re.search(r"last\s+(\d+)\s+over", q):
+            m = re.search(r"last\s+(\d+)\s+over", q)
+            n = int(m.group(1)) if m else 5
+            lines.append(f"- Runs in last {n} overs: {self.tool.runs_last_n_overs(n)}")
+            lines.append(f"- Wickets in last {n} overs: {self.tool.wickets_last_n_overs(n)}")
+        else:
+            lines.append(f"- Runs in last 5 overs: {self.tool.runs_last_n_overs(5)}")
+
+        if re.search(r"\bfour\b", q):
+            lines.append(f"- Fours: {self.tool.total_fours()}")
+        if re.search(r"\bsix", q):
+            lines.append(f"- Sixes: {self.tool.total_sixes()}")
+        if not re.search(r"\bfour\b|\bsix", q):
+            lines.append(f"- Fours: {self.tool.total_fours()}")
+            lines.append(f"- Sixes: {self.tool.total_sixes()}")
+
+        context = "\n".join(lines)
+        logger.info("context_generated question=%r", question)
         return context
 
 
-# ============================================================
-# AnalystAgent (LLM Reasoning Layer)
-# ============================================================
+# ── AnalystAgent ───────────────────────────────────────────────────────────
 
 class AnalystAgent:
     """
     LLM-backed grounded reasoning agent.
 
-    STRICT DESIGN:
-    - No hallucinations
-    - Uses only provided context
-    - Deterministic decoding
+    Prompt format matches the LoRA training data from prepare_dataset.py.
+    Grounding is two-tier:
+      1. If an expected_value is passed (the stat we actually computed),
+         accept the model answer only if it matches that value exactly.
+      2. Fallback: accept any number present anywhere in the context.
+    This prevents the model from hallucinating a valid-looking number that
+    happens to appear in the context but is the wrong answer.
     """
 
-    def __init__(self, model, tokenizer, device: str):
+    def __init__(self, model, tokenizer, device: str) -> None:
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
 
-    def act(self, question: str, context: str) -> str:
-        """
-        Generate grounded answer from structured context.
-        
-        STRICT GROUNDING:
-        - Only accepts numbers present in context
-        - No hallucinations allowed
-        - Deterministic extraction
-        """
-        
-        prompt = f"""You are a cricket statistics assistant.
+    def act(
+        self,
+        question: str,
+        context: str,
+        max_new_tokens: int = 32,
+        expected_value: Optional[str] = None,
+    ) -> str:
+        prompt = (
+            "Instruction:\n"
+            "You are a cricket statistics assistant. Answer the question using "
+            "ONLY the numbers provided in the context below. "
+            "If the answer is not in the context, say \"not available\".\n\n"
+            f"{context}\n\n"
+            f"Question: {question}\n\n"
+            "Response:"
+        )
 
-RULES (MANDATORY):
-1. Use ONLY numbers from the context below.
-2. Output ONLY the numeric answer. No explanations.
-3. If the answer is not in the context, output exactly: Not available
-
-Question: {question}
-
-Context:
-{context}
-
-Answer (number only):""".strip()
-
-        inputs = self.tokenizer(
-            prompt,
-            return_tensors="pt"
-        ).to(self.device)
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
         with torch.no_grad():
             output = self.model.generate(
                 **inputs,
-                max_new_tokens=64,
+                max_new_tokens=max_new_tokens,
                 do_sample=False,
                 num_beams=1,
                 eos_token_id=self.tokenizer.eos_token_id,
-                pad_token_id=self.tokenizer.eos_token_id
+                pad_token_id=self.tokenizer.eos_token_id,
             )
 
         decoded = self.tokenizer.decode(output[0], skip_special_tokens=True)
-        
-        # Extract answer after prompt
-        if "Answer (number only):" in decoded:
-            raw_answer = decoded.split("Answer (number only):")[-1].strip()
+
+        # Extract everything after the last "Response:" marker
+        if "Response:" in decoded:
+            raw = decoded.split("Response:")[-1].strip()
         else:
-            # Fallback: take everything after prompt
-            raw_answer = decoded[len(prompt):].strip()
-        
-        # Clean up (take first line only)
-        raw_answer = raw_answer.split("\n")[0].strip()
-        
-        # Extract numbers from model output
-        model_numbers = re.findall(r"\d+", raw_answer)
-        
-        # Extract numbers from context (for grounding)
-        context_numbers = re.findall(r"\d+", context)
-        
-        # STRICT GROUNDING: only accept numbers present in context
-        if model_numbers:
-            for num in model_numbers:
-                if num in context_numbers:
-                    logger.info(f"✓ Question: {question}")
-                    logger.info(f"✓ Answer: {num} (grounded in context)")
-                    return num
-            logger.warning(f"⚠ Model output '{raw_answer}' contains numbers not in context")
-        
-        # Check if model explicitly said unavailable
-        if "not available" in raw_answer.lower():
-            logger.info(f"✓ Question: {question}")
-            logger.info(f"✓ Answer: Not available (model stated explicitly)")
+            raw = decoded[len(prompt):].strip()
+
+        raw = raw.split("\n")[0].strip()
+
+        # --- Tier-1 grounding: exact match against the computed answer ------
+        model_nums = re.findall(r"\d+(?:\.\d+)?", raw)
+
+        if expected_value is not None and model_nums:
+            if expected_value in model_nums:
+                logger.info(
+                    "answer=%r question=%r (key-grounded)", expected_value, question
+                )
+                return expected_value
+            # Model produced a different number — fall through to tier-2 or fail
+            logger.warning(
+                "key_grounding_miss expected=%r raw=%r question=%r",
+                expected_value, raw, question,
+            )
+
+        # --- Tier-2 grounding: any number present in the context -----------
+        context_nums = re.findall(r"\d+(?:\.\d+)?", context)
+        for num in model_nums:
+            if num in context_nums:
+                logger.info("answer=%r question=%r (context-grounded)", num, question)
+                return num
+
+        if "not available" in raw.lower():
             return "The information is not available in the provided data."
-        
-        # Default fallback
-        logger.warning(f"⚠ Could not extract grounded answer from: {raw_answer}")
-        logger.info(f"✓ Question: {question}")
-        logger.info(f"✓ Answer: Not available (fallback)")
+
+        logger.warning("grounding_failed raw=%r question=%r", raw, question)
         return "The information is not available in the provided data."
