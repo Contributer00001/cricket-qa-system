@@ -1,0 +1,74 @@
+[
+  {
+    "question": "Who scored the most runs in IPL 2022?",
+    "answer": "Jos Buttler (863 runs)",
+    "category": "tournament_batting",
+    "source": "tournament_batting"
+  },
+  {
+    "question": "Who took the most wickets in IPL 2022?",
+    "answer": "Yuzvendra Chahal (27 wickets)",
+    "category": "tournament_bowling",
+    "source": "tournament_bowling"
+  },
+  {
+    "question": "Which batsman had the best batting average in IPL 2022?",
+    "answer": "David Miller (avg 68.71)",
+    "category": "tournament_batting",
+    "source": "tournament_batting"
+  },
+  {
+    "question": "Which bowler had the best economy rate in IPL 2022?",
+    "answer": "Yuzvendra Chahal (economy 0.0)",
+    "category": "tournament_bowling",
+    "source": "tournament_bowling"
+  },
+  {
+    "question": "Who hit the most sixes in IPL 2022?",
+    "answer": "Jos Buttler (45 sixes)",
+    "category": "tournament_batting",
+    "source": "tournament_batting"
+  },
+  {
+    "question": "Who hit the most fours in IPL 2022?",
+    "answer": "Jos Buttler (83 fours)",
+    "category": "tournament_batting",
+    "source": "tournament_batting"
+  },
+  {
+    "question": "What is the highest team score in IPL 2022?",
+    "answer": "DC vs RR: 222/2 (20 ov) (Match 34)",
+    "category": "tournament_records",
+    "source": "innings"
+  },
+  {
+    "question": "Which team finished top of the IPL 2022 points table?",
+    "answer": "Gujarat Titans (20 points, 10 wins)",
+    "category": "standings",
+    "source": "standings"
+  },
+  {
+    "question": "How many sixes were hit in IPL 2022?",
+    "answer": "973",
+    "category": "tournament_records",
+    "source": "deliveries"
+  },
+  {
+    "question": "What is the highest individual score in IPL 2022?",
+    "answer": "Quinton de Kock: 140 runs (KKR vs LSG)",
+    "category": "tournament_records",
+    "source": "scorecard"
+  },
+  {
+    "question": "What are the best bowling figures in a single innings in IPL 2022?",
+    "answer": "Jasprit Bumrah: 5/10 (MI vs KKR)",
+    "category": "tournament_records",
+    "source": "scorecard"
+  },
+  {
+    "question": "Which team scored the most runs on average in powerplay overs in IPL 2022?",
+    "answer": " (avg 47.5 per match)",
+    "category": "phase_analysis",
+    "source": "deliveries"
+  }
+]
