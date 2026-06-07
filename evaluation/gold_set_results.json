@@ -1,0 +1,154 @@
+{
+  "per_match": {
+    "n": 941,
+    "exact_match": 1.0,
+    "numeric_match": 0.5356,
+    "contains_match": 1.0,
+    "latency_p50_ms": 0.107,
+    "latency_p95_ms": 0.353,
+    "by_category": {
+      "innings_stats": {
+        "n": 142,
+        "exact_match": 1.0,
+        "numeric_match": 1.0,
+        "contains_match": 1.0
+      },
+      "innings_total": {
+        "n": 444,
+        "exact_match": 1.0,
+        "numeric_match": 0.6667,
+        "contains_match": 1.0
+      },
+      "match_result": {
+        "n": 74,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "phase": {
+        "n": 134,
+        "exact_match": 1.0,
+        "numeric_match": 0.4925,
+        "contains_match": 1.0
+      },
+      "top_performer": {
+        "n": 147,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      }
+    }
+  },
+  "tournament": {
+    "n": 12,
+    "exact_match": 1.0,
+    "numeric_match": 0.0833,
+    "contains_match": 1.0,
+    "latency_p50_ms": 0.727,
+    "latency_p95_ms": 1.49,
+    "by_category": {
+      "phase_analysis": {
+        "n": 1,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "standings": {
+        "n": 1,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_batting": {
+        "n": 4,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_bowling": {
+        "n": 2,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_records": {
+        "n": 4,
+        "exact_match": 1.0,
+        "numeric_match": 0.25,
+        "contains_match": 1.0
+      }
+    }
+  },
+  "combined": {
+    "n": 953,
+    "exact_match": 1.0,
+    "numeric_match": 0.5299,
+    "contains_match": 1.0,
+    "latency_p50_ms": 0.109,
+    "latency_p95_ms": 0.36,
+    "by_category": {
+      "innings_stats": {
+        "n": 142,
+        "exact_match": 1.0,
+        "numeric_match": 1.0,
+        "contains_match": 1.0
+      },
+      "innings_total": {
+        "n": 444,
+        "exact_match": 1.0,
+        "numeric_match": 0.6667,
+        "contains_match": 1.0
+      },
+      "match_result": {
+        "n": 74,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "phase": {
+        "n": 134,
+        "exact_match": 1.0,
+        "numeric_match": 0.4925,
+        "contains_match": 1.0
+      },
+      "phase_analysis": {
+        "n": 1,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "standings": {
+        "n": 1,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "top_performer": {
+        "n": 147,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_batting": {
+        "n": 4,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_bowling": {
+        "n": 2,
+        "exact_match": 1.0,
+        "numeric_match": 0.0,
+        "contains_match": 1.0
+      },
+      "tournament_records": {
+        "n": 4,
+        "exact_match": 1.0,
+        "numeric_match": 0.25,
+        "contains_match": 1.0
+      }
+    }
+  },
+  "per_match_failures": [],
+  "tournament_failures": []
+}
