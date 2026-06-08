@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Optional
 
 from agents.orchestrator import CricketOrchestrator
-from agents.query_router import QueryRouter
 from evaluation.dataset import BENCHMARK, BenchmarkItem
 
 

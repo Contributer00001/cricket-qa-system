@@ -21,7 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -322,7 +322,7 @@ def print_report(summary: dict, label: str) -> None:
     print(f"  Numeric match   : {summary['numeric_match']:.1%}")
     print(f"  Contains match  : {summary['contains_match']:.1%}")
     print(f"  Latency p50/p95 : {summary['latency_p50_ms']:.3f} / {summary['latency_p95_ms']:.3f} ms")
-    print(f"\n  By category:")
+    print("\n  By category:")
     for cat, s in summary["by_category"].items():
         bar_exact = "█" * int(s["exact_match"] * 20)
         print(f"    {cat:<22} n={s['n']:>3}  "
