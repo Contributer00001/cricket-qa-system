@@ -4,8 +4,9 @@ Generates ground-truth Q&A pairs from DuckDB, scaling to all 74 matches.
 Run: python -m evaluation.generate_gold_set --db ipl2022.duckdb --out evaluation/gold_sets/
 """
 from __future__ import annotations
-import argparse, json, os, re
-from pathlib import Path
+import argparse
+import json
+import os
 import duckdb
 
 
@@ -36,8 +37,6 @@ def generate_per_match(con: duckdb.DuckDBPyConnection) -> list[dict]:
             runs_wickets = scores.split("/") if "/" in scores else [scores, "10"]
             runs = runs_wickets[0]
             wickets = runs_wickets[1].split("(")[0].strip() if len(runs_wickets) > 1 else "10"
-            overs_match = re.search(r'\((\d+\.?\d*)\s*ov', scores_full or "")
-            overs = overs_match.group(1) if overs_match else "20"
 
             # Q1: total runs
             fixtures.append({
