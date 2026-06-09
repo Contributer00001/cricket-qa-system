@@ -1,9 +1,26 @@
-# ── HuggingFace Spaces — Cricket QA API ──────────────────────────────────────
-# Deterministic path only (no torch/transformers).
-# Default /infer endpoint (use_llm=false) answers in < 1ms from DuckDB + StatsEngine.
+# ── HuggingFace Spaces — Cricket QA (API + Frontend) ─────────────────────────
+# Stage 1  : build the React/Vite frontend
+# Stage 2  : install Python deps
+# Stage 3  : lightweight runtime with API + static files
+#
+# /infer endpoint (use_llm=false) answers in < 1ms from DuckDB + StatsEngine.
 # use_llm=true returns HTTP 503 — ML model not loaded in this build.
 
-FROM python:3.11-slim AS builder
+
+# ── Stage 1: build frontend ───────────────────────────────────────────────────
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /frontend
+
+COPY Frontend/package.json Frontend/package-lock.json ./
+RUN npm ci --prefer-offline
+
+COPY Frontend/ ./
+RUN npm run build
+
+
+# ── Stage 2: install Python deps ─────────────────────────────────────────────
+FROM python:3.11-slim AS py-builder
 
 WORKDIR /app
 
@@ -16,11 +33,13 @@ RUN pip install --upgrade pip \
  && pip install --prefix=/install --no-cache-dir -r requirements-hf.txt
 
 
+# ── Stage 3: runtime ──────────────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
-COPY --from=builder /install /usr/local
+# Python packages
+COPY --from=py-builder /install /usr/local
 
 # Application code
 COPY agents/    ./agents/
@@ -29,6 +48,9 @@ COPY data/sample_match.json ./data/sample_match.json
 
 # Pre-built DuckDB — all 74 IPL 2022 matches, 15 598 deliveries
 COPY ipl2022.duckdb ./
+
+# Built frontend (served as static files by FastAPI)
+COPY --from=frontend-builder /frontend/dist ./static/
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
