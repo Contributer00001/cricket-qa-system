@@ -4,7 +4,6 @@ Integration smoke-tests for the FastAPI service.
 These tests use the no-LLM path (use_llm=False, default) so no model
 download is needed in CI.
 """
-import pytest
 from fastapi.testclient import TestClient
 
 from service.app import app

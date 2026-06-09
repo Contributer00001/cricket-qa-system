@@ -300,7 +300,7 @@ class CricketOrchestrator:
 
     @staticmethod
     def _build_duckdb_context(t: dict[str, Any]) -> str:
-        lines = [f"Source: duckdb", f"Intent: {t['intent']}"]
+        lines = ["Source: duckdb", f"Intent: {t['intent']}"]
         data = t.get("data")
         if isinstance(data, list) and data:
             first = data[0]
