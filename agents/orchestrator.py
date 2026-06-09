@@ -219,7 +219,10 @@ class CricketOrchestrator:
                 "source": "duckdb",
             }
 
-        if "total sixes" in q or ("how many sixes" in q and "ipl" in q):
+        # Guard: "how many sixes did [player]..." is a player query, not a tournament total.
+        # " did " or " by " in the question signals a subject (player) was named.
+        _player_specific = " did " in q or " by " in q
+        if not _player_specific and ("total sixes" in q or ("how many sixes" in q and "ipl" in q)):
             total = db.tournament_sixes_total()
             return {
                 "answer": str(total),
@@ -228,7 +231,7 @@ class CricketOrchestrator:
                 "source": "duckdb",
             }
 
-        if "total fours" in q or ("how many fours" in q and "ipl" in q):
+        if not _player_specific and ("total fours" in q or ("how many fours" in q and "ipl" in q)):
             total = db.tournament_fours_total()
             return {
                 "answer": str(total),
@@ -273,17 +276,41 @@ class CricketOrchestrator:
                 "source": "duckdb",
             }
 
-        # Player name heuristic — capitalised words
-        names = re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', original)
+        # Player name heuristic — capitalised words, skipping question/sentence starters
+        _SKIP_WORDS = {
+            "How", "What", "Who", "Which", "When", "Where", "Did", "Does",
+            "Was", "Were", "Is", "Are", "The", "In", "At", "For", "By",
+            "And", "Or", "Of", "To", "A", "An", "IPL",
+        }
+        names = [
+            w for w in re.findall(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b', original)
+            if w not in _SKIP_WORDS
+        ]
         if names:
             name = names[0]
             data = db.player_stats(name)
             if data.get("batting") or data.get("bowling"):
                 parts: list[str] = []
-                if data.get("batting"):
-                    parts.append(f"batting: {data['batting'].get('runs', 0)} runs")
-                if data.get("bowling"):
-                    parts.append(f"bowling: {data['bowling'].get('wickets', 0)} wickets")
+                bat = data.get("batting", {})
+                bowl = data.get("bowling", {})
+                # Answer the specific stat asked for if possible
+                if "sixes" in q and bat:
+                    parts.append(f"{bat.get('sixes', 0)} sixes")
+                elif "fours" in q and bat:
+                    parts.append(f"{bat.get('fours', 0)} fours")
+                elif "runs" in q and bat:
+                    parts.append(f"{bat.get('runs', 0)} runs")
+                elif "wickets" in q and bowl:
+                    parts.append(f"{bowl.get('wickets', 0)} wickets")
+                elif "average" in q and bat:
+                    parts.append(f"average {bat.get('average', 0)}")
+                elif "economy" in q and bowl:
+                    parts.append(f"economy {bowl.get('economy', 0)}")
+                else:
+                    if bat:
+                        parts.append(f"batting: {bat.get('runs', 0)} runs")
+                    if bowl:
+                        parts.append(f"bowling: {bowl.get('wickets', 0)} wickets")
                 return {
                     "answer": f"{name}: {', '.join(parts)}",
                     "intent": "player_stats",
