@@ -87,7 +87,7 @@ def context_precision_score(context: str, question: str, ground_truth: str) -> f
     A line is "relevant" if it contains at least one ground-truth number or
     matches a keyword from the question.
     """
-    lines = [l for l in context.splitlines() if l.startswith("-")]
+    lines = [line for line in context.splitlines() if line.startswith("-")]
     if not lines:
         return 1.0
 

@@ -4,7 +4,8 @@ Cross-match IPL analytics powered by DuckDB.
 Answers tournament-wide questions that the per-match StatsEngine cannot.
 """
 from __future__ import annotations
-import os, re, logging
+import os
+import logging
 from typing import Optional
 import duckdb
 
