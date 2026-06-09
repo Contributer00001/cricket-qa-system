@@ -10,8 +10,11 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from agents.orchestrator import CricketOrchestrator
 
@@ -73,9 +76,22 @@ async def lifespan(app: FastAPI):
     logger.info("service shutting down — draining in-flight requests")
 
 
+# ── /api prefix middleware ─────────────────────────────────────────────────
+# The frontend build calls /api/infer, /api/ipl/stats, etc.
+# This middleware strips the /api prefix so FastAPI routes (/infer, etc.) match.
+
+class StripApiPrefixMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path.startswith("/api/"):
+            request.scope["path"] = request.url.path[4:]  # /api/infer → /infer
+        return await call_next(request)
+
+
 # ── App ────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Cricket QA API", version="2.0", lifespan=lifespan)
+
+app.add_middleware(StripApiPrefixMiddleware)
 
 if _RATE_LIMIT_AVAILABLE:
     app.state.limiter = limiter
@@ -251,6 +267,10 @@ def ipl_stats():
 
 @app.get("/")
 def root():
+    """Serve the frontend if built, otherwise return API info."""
+    index = os.path.join("static", "index.html")
+    if os.path.exists(index):
+        return FileResponse(index)
     return {
         "service": "Cricket QA API",
         "version": "2.0",
@@ -355,3 +375,19 @@ async def infer(
         "data":         result.get("data"),
         "status":       "success",
     }
+
+
+# ── Static frontend (SPA) ──────────────────────────────────────────────────
+# Mounted last so API routes above take priority.
+# /assets/* → static/assets/* (JS, CSS, images)
+# Any other unmatched path → index.html (React Router handles client-side routing)
+
+_STATIC_DIR = "static"
+
+if os.path.isdir(_STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=os.path.join(_STATIC_DIR, "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str):
+        """Fall through to index.html for all unmatched routes (SPA routing)."""
+        return FileResponse(os.path.join(_STATIC_DIR, "index.html"))
